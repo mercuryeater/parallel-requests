@@ -2,7 +2,9 @@ import { useState, useEffect } from "react";
 
 async function fetchEpisodes() {
   const res = await fetch("https://rickandmortyapi.com/api/episode");
-  return res.json();
+  const data = await res.json();
+  const episodes = data.results
+  return episodes;
 }
 
 async function fetchCharacters(id) {
@@ -10,28 +12,11 @@ async function fetchCharacters(id) {
   return res.json();
 }
 
-function Parallel() {
-  const [episodes, setEpisodes] = useState([]);
 
-  useEffect(() => {
-    const fetchAll = async () => {
-      const promiseEpisodes = fetchEpisodes();
-      // const promiseCharacters = fetchCharacters();
-
-      const [episodesData, charactersData] = await Promise.all([
-        promiseEpisodes,
-        // promiseCharacters,
-      ]).then(console.log("checking"));
-
-      setEpisodes(episodesData.results);
-      // setCharacters(charactersData.results);
-    };
-    fetchAll();
-  }, []);
-
-  
-  function getIdsPerEpisode() {
-
+  async function getData() {
+    
+    const episodes = await fetchEpisodes();
+    
     const charactersUrl = [];
     const idsSet = new Set();
 
@@ -47,29 +32,56 @@ function Parallel() {
       const splitUrl = url.split("/");
       idsSet.add(splitUrl[splitUrl.length - 1]);
     });
-    console.log(idsSet);
 
     const promiseIds = [];
-    console.log("🚀 ~ file: Parallel.jsx:53 ~ getIdsPerEpisode ~ promiseIds:", promiseIds)
     for (const id of idsSet) {
       promiseIds.push(fetchCharacters(id));
     }
-  }
 
-  getIdsPerEpisode();
+    const characters = await Promise.all(promiseIds);
 
+    const episodesAndCharacters = episodes.map((episode) => {
+      return {
+        id: episode.id,
+        title: `Title: ${episode.name}`,
+        episode: episode.episode,
+        airDate: episode.air_date, 
+        characters: episode.characters.slice(0, 10).map((url) => {
+          return characters.find((item) => item.url === url);
+        })
+      }
+    })
+    return episodesAndCharacters;  
+  } 
+  console.log(getData()); 
+  
+
+function Parallel() {
+  const [data, setData] = useState([]);
+
+  useEffect(() => {
+    getData().then((data) => {
+      setData(data)})
+  }, []);
 
   return (
     <>
       <h1>episodios</h1>
-      {episodes.map((episode) => {
+      {data.map((episode) => {
         return (
           <div key={episode.id}>
-            <h1>{episode.name}</h1>
-            <h2>Fecha al aire: {episode.air_date}</h2>
-            <h2>personajes:</h2>
-            {/* Aca irian los personajes */}
-            <h2></h2>
+            <h1>{episode.title}</h1>
+            <h2>On air: {episode.airDate}</h2>
+            <h3>Characters:</h3>
+            <ul>
+            {episode.characters.map((character) =>{
+              return (
+                <li key={character.id}>
+                <p><strong>Name:</strong> {character.name} - <em>{character.species}</em></p>
+              </li>
+              )
+            })}
+            </ul>
             <hr />
           </div>
         );
