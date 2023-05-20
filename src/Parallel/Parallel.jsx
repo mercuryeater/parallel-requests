@@ -70,7 +70,7 @@ function Parallel() {
       {data.map((episode) => {
         return (
           <div key={episode.id}>
-            <h1>{episode.title}</h1>
+            <h1>{episode.title} - {episode.episode}</h1>
             <h2>On air: {episode.airDate}</h2>
             <h3>Characters:</h3>
             <ul>
